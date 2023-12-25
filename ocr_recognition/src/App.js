@@ -44,17 +44,17 @@ const App = () => {
       try {
         const extractedInfo = extractInfo(ocrData.text);
         const currentTime = new Date().toISOString();
-
+        
         const recordData = {
           ocrResult: extractedInfo,
           timestamp: currentTime,
           status: 'success', // You can set status based on your logic
-          errorMessage: '', // Set error message if applicable
         };
-
+        
+        console.log(recordData);
         const response = await axios.post('http://localhost:5001/ocr/create', recordData);
         console.log('Record created:', response.data);
-        setOcrRecords([response.data.data]); // Update frontend records
+        // setOcrRecords([response.data.data]); // Update frontend records
       } catch (error) {
         console.error('Error creating record:', error);
       }
@@ -63,17 +63,18 @@ const App = () => {
 
 
   const displayRecords = () => {
-    if (showRecords) {
+    if(showRecords){
       return (
         <div>
           <h2>OCR Records</h2>
           <ul>
-            {ocrRecords[0].map((record, index) => (
+            {ocrRecords.map((record, index) => (
               <li key={index}>
-                <strong>OCR Result:</strong> {JSON.stringify(record.ocrResult)} <br />
+                <strong>OCR Result:</strong> <br />
+                <pre>{JSON.stringify(record.ocrResult, null, 4)}</pre>
                 <strong>Timestamp:</strong> {record.timestamp} <br />
                 <strong>Status:</strong> {record.status} <br />
-                <strong>Error Message:</strong> {record.errorMessage} <br />
+                <strong>ID:</strong> {record.customId} <br />
                 <hr />
               </li>
             ))}
@@ -119,8 +120,15 @@ const App = () => {
     }
   };
 
-  const handleDisplay = () => {
-    setShowRecords(true); // Set showRecords to true when Display button is clicked
+  const handleDisplay = async () => {
+     // Set showRecords to true when Display button is clicked
+    try {
+      const response = await axios.get('http://localhost:5001/ocr/display'); // Fetch records from backend
+      setOcrRecords(response.data); // Update the state with fetched records
+      setShowRecords(true);
+    } catch (error) {
+      console.error('Error fetching records:', error);
+    }
   };
 
   return (
@@ -128,6 +136,7 @@ const App = () => {
       <h1>Thai ID Card OCR</h1>
       <input type="file" accept=".png, .jpg, .jpeg" onChange={handleFileChange} />
       <button onClick={handleFileUpload}>Upload</button>
+      <button onClick={handleDisplay}>Display</button>
       {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
       {ocrData && (
         <div>
@@ -141,11 +150,10 @@ const App = () => {
           </pre>
           <div>
             <button onClick={createRecord}>Create</button>
-            <button onClick={handleDisplay}>Display</button>
           </div>
-          {displayRecords()}
         </div>
       )}
+      {displayRecords()}
     </div>
   );
 };
